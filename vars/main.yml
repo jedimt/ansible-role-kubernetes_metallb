@@ -1,0 +1,11 @@
+---
+# vars file for nebulon.kubernetes_create_cluster
+# All values are case sensitive, except where noted
+
+# MetalLB L2 load balancer for K8s
+metallb_version: "v0.10.2"
+
+# "Service" IP addresses to use for pods needing a load balancer
+# This represents a continuous range of IP addresses 
+metallb_start: 10.100.24.25
+metallb_end: 10.100.24.29

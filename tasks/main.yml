@@ -1,0 +1,51 @@
+---
+#MetalLB Install and Configure
+- name: Create MetalLB namespace
+  ansible.builtin.shell:
+    cmd: |
+      kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{metallb_version}}/manifests/namespace.yaml
+
+- name: Install MetalLB
+  ansible.builtin.shell:
+    cmd: |
+      kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{metallb_version}}/manifests/metallb.yaml
+
+####
+- name: Test if MetalLB secret already exists
+  ansible.builtin.shell: kubectl get secrets -n metallb-system
+  register: metallb_secret
+  changed_when: false
+  tags: metallb
+
+- name: create MetalLB secret
+  ansible.builtin.shell:
+    cmd: |
+      kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+  when: "'memberlist' not in metallb_secret.stdout"
+  tags: metallb
+####
+
+- name: Create MetalLB configmap
+  ansible.builtin.shell: 
+    cmd: | 
+      cat <<EOF >/tmp/metallb_configmap.yaml
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        namespace: metallb-system
+        name: config
+      data:
+        config: |
+          address-pools:
+          - name: default
+            protocol: layer2
+            addresses:
+            - {{metallb_start}}-{{metallb_end}}
+      EOF
+
+- name: Apply MetalLB configmap
+  ansible.builtin.shell: 
+    cmd: | 
+      kubectl apply -f /tmp/metallb_configmap.yaml
+
+
