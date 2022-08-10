@@ -1,5 +1,6 @@
 galaxy_info:
-  author: Aaron Patten
+  author: jedimt
+  role_name: kubernetes_metallb
   description: Install MetalLB
 
   license: MIT
@@ -13,7 +14,7 @@ galaxy_info:
         - xenial
         - jammy
 
-  galaxy_tags: 
+  galaxy_tags:
     - metallb
     - kubernetes
 
