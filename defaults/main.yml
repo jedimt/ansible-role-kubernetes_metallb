@@ -1,2 +1,12 @@
 ---
-# defaults file for nebulon.kubernetes_prep
+# defaults file for ansible-role-kubernetes-metallb
+
+# MetalLB L2 load balancer version for K8s
+metallb_version: "v0.13.7"
+
+# "Service" IP addresses to use for pods needing a load balancer
+metallb_start: 10.100.24.48
+metallb_end: 10.100.24.52
+
+# URL to pull MetalLB manifests
+metallb_url: "https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests"

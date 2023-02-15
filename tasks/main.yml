@@ -1,14 +1,25 @@
 ---
 # MetalLB Install and Configure
+# The metallb configmap will fail to apply unless the nodes are all in a Ready status
+- name: Wait for all nodes to become available
+  ansible.builtin.command: kubectl get nodes
+  register: kubectl_output
+  until: "'NotReady' not in kubectl_output.stdout"
+  tags: nodes_ready
+  retries: 12
+  delay: 20
+  changed_when: false
+
+- name: Check for existing MetalLB namespace
+  ansible.builtin.command: kubectl get ns
+  register: k8s_namespaces
+  changed_when: false
+
 - name: Create MetalLB namespace
   ansible.builtin.command:
     cmd: |
-      kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/namespace.yaml
-
-- name: Install MetalLB
-  ansible.builtin.command:
-    cmd: |
-      kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/metallb.yaml
+      kubectl apply -f {{ metallb_url }}/metallb-native.yaml
+  when: "'metal' not in k8s_namespaces.stdout"
 
 - name: Test if MetalLB secret already exists
   ansible.builtin.command: kubectl get secrets -n metallb-system
@@ -16,12 +27,18 @@
   changed_when: false
   tags: metallb
 
-- name: create MetalLB secret
+- name: Create MetalLB secret
   ansible.builtin.shell:
     cmd: |
       kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
   when: "'memberlist' not in metallb_secret.stdout"
   tags: metallb
+
+- name: Check for existing MetalLB config map
+  ansible.builtin.stat:
+    path: "/tmp/metallb_configmap.yaml"
+  register: metallb_configmap
+  changed_when: false
 
 - name: Create MetalLB configmap
   ansible.builtin.shell:
@@ -40,8 +57,11 @@
             addresses:
             - {{ metallb_start }}-{{ metallb_end }}
       EOF
+  when: not metallb_configmap.stat.exists
 
 - name: Apply MetalLB configmap
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: |
       kubectl apply -f /tmp/metallb_configmap.yaml
+  register: kubectl_apply_metallb
+  changed_when: "'configmap/config unchanged' not in kubectl_apply_metallb.stdout"
