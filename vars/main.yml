@@ -3,9 +3,18 @@
 # All values are case sensitive, except where noted
 
 # MetalLB L2 load balancer for K8s
-metallb_version: "v0.13.7"
+# metallb_version: "v0.13.7" # Can't get this to work properly
+metallb_version: "v0.12.1"
 
 # "Service" IP addresses to use for pods needing a load balancer
 # This represents a continuous range of IP addresses
-metallb_start: 10.100.24.25
-metallb_end: 10.100.24.29
+metallb_start: 10.100.24.48
+metallb_end: 10.100.24.52
+
+# URL to pull MetalLB manifests for v0.13x versions
+metallb_v13_url: "https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests"
+
+# URLs for MetalLB manifests for v0.12.x version
+metallb_v12_base_url: https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests
+metallb_v12_namespace_url: "{{ metallb_v12_base_url }}/namespace.yaml"
+metallb_v12_metallb_url: "{{ metallb_v12_base_url }}/metallb.yaml"

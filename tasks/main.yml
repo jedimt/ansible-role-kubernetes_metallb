@@ -15,49 +15,91 @@
   register: k8s_namespaces
   changed_when: false
 
-- name: Create MetalLB namespace
-  ansible.builtin.command:
-    cmd: |
-      kubectl apply -f {{ metallb_url }}/metallb-native.yaml
-  when: "'metal' not in k8s_namespaces.stdout"
+- name: Install MetalLB v0.12.1
+  when: metallb_version == "v0.12.1"
 
-- name: Test if MetalLB secret already exists
-  ansible.builtin.command: kubectl get secrets -n metallb-system
-  register: metallb_secret
-  changed_when: false
-  tags: metallb
+  block:
+    - name: Create MetalLB namespace
+      ansible.builtin.command:
+        cmd: |
+          kubectl apply -f {{ metallb_v12_namespace_url }}
+      when: "'metal' not in k8s_namespaces.stdout"
 
-- name: Create MetalLB secret
-  ansible.builtin.shell:
-    cmd: |
-      kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-  when: "'memberlist' not in metallb_secret.stdout"
-  tags: metallb
+    - name: Install MetalLB v0.12.1
+      ansible.builtin.command:
+        cmd: |
+          kubectl apply -f {{ metallb_v12_metallb_url }}
+      when: "'metal' not in k8s_namespaces.stdout"
 
-- name: Check for existing MetalLB config map
-  ansible.builtin.stat:
-    path: "/tmp/metallb_configmap.yaml"
-  register: metallb_configmap
-  changed_when: false
+    - name: Test if MetalLB secret already exists
+      ansible.builtin.command: kubectl get secrets -n metallb-system
+      register: metallb_secret
+      changed_when: false
+      tags: metallb
 
-- name: Create MetalLB configmap
-  ansible.builtin.shell:
-    cmd: |
-      cat <<EOF >/tmp/metallb_configmap.yaml
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        namespace: metallb-system
-        name: config
-      data:
-        config: |
-          address-pools:
-          - name: default
-            protocol: layer2
+    - name: Create MetalLB secret
+      ansible.builtin.shell:
+        cmd: |
+          kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+      when: "'memberlist' not in metallb_secret.stdout"
+      tags: metallb
+
+    - name: Check for existing MetalLB config map
+      ansible.builtin.stat:
+        path: "/tmp/metallb_configmap.yaml"
+      register: metallb_configmap
+      changed_when: false
+
+    - name: Create MetalLB configmap (v0.12.1)
+      ansible.builtin.shell:
+        cmd: |
+          cat <<EOF >/tmp/metallb_configmap.yaml
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            namespace: metallb-system
+            name: config
+          data:
+            config: |
+              address-pools:
+              - name: default
+                protocol: layer2
+                addresses:
+                - {{ metallb_start }}-{{ metallb_end }}
+          EOF
+      when: not metallb_configmap.stat.exists
+
+- name: Install MetalLB (v0.13+)
+  when:
+    - metallb_version == "v0.13.7"
+
+  block:
+    - name: Install MetalLB v0.13.x
+      ansible.builtin.command:
+        cmd: |
+          kubectl apply -f {{ metallb_v13_url }}/metallb-native.yaml
+      when: "'metal' not in k8s_namespaces.stdout"
+
+    - name: Create MetalLB configmap (v0.13.7)
+      ansible.builtin.shell:
+        cmd: |
+          cat <<EOF >/tmp/metallb_configmap.yaml
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            namespace: metallb-system
+            name: config
+          spec:
             addresses:
-            - {{ metallb_start }}-{{ metallb_end }}
-      EOF
-  when: not metallb_configmap.stat.exists
+              - {{ metallb_start }}/22-{{ metallb_end }}/22
+          ---
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: l2-advert
+            namespace: metallb-system
+          EOF
+      when: "'metal' not in k8s_namespaces.stdout"
 
 - name: Apply MetalLB configmap
   ansible.builtin.command:
@@ -65,3 +107,6 @@
       kubectl apply -f /tmp/metallb_configmap.yaml
   register: kubectl_apply_metallb
   changed_when: "'configmap/config unchanged' not in kubectl_apply_metallb.stdout"
+  retries: 12
+  delay: 20
+  until: kubectl_apply_metallb is success
