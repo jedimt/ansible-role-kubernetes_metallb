@@ -71,7 +71,7 @@
 
 - name: Install MetalLB (v0.13+)
   when:
-    - metallb_version == "v0.13.7"
+    - metallb_version == "v0.13.9"
 
   block:
     - name: Install MetalLB v0.13.x
@@ -80,7 +80,7 @@
           kubectl apply -f {{ metallb_v13_url }}/metallb-native.yaml
       when: "'metal' not in k8s_namespaces.stdout"
 
-    - name: Create MetalLB configmap (v0.13.7)
+    - name: Create MetalLB configmap
       ansible.builtin.shell:
         cmd: |
           cat <<EOF >/tmp/metallb_configmap.yaml
@@ -88,16 +88,20 @@
           kind: IPAddressPool
           metadata:
             namespace: metallb-system
-            name: config
+            name: default
           spec:
             addresses:
-              - {{ metallb_start }}/22-{{ metallb_end }}/22
+              - {{ metallb_start }}-{{ metallb_end }}
+            autoAssign: true
           ---
           apiVersion: metallb.io/v1beta1
           kind: L2Advertisement
           metadata:
-            name: l2-advert
+            name: default
             namespace: metallb-system
+          spec:
+            ipAddressPools:
+            - default
           EOF
       when: "'metal' not in k8s_namespaces.stdout"
 
