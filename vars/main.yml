@@ -1,6 +1,5 @@
 ---
 # vars file for nebulon.kubernetes_create_cluster
-# All values are case sensitive, except where noted
 
 # MetalLB L2 load balancer for K8s (v0.13.9 | v0.12.1)
 metallb_version: "v0.13.9"
