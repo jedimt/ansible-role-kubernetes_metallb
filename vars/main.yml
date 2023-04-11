@@ -1,8 +1,9 @@
 ---
-# vars file for nebulon.kubernetes_create_cluster
+# vars file for jedimt.kubernetes_metallb
 
 # MetalLB L2 load balancer for K8s (v0.13.9 | v0.12.1)
 metallb_version: "v0.13.9"
+
 # For previous configmap based versions, v0.12.1 was last release
 # metallb_version: "v0.12.1"
 

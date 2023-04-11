@@ -15,6 +15,7 @@ This role can install either the configmap based MetalLB v0.12.1 or the CRD base
 
     # MetalLB L2 load balancer for K8s (v0.13.9 | v0.12.1)
     metallb_version: "v0.13.9"
+
     # For previous configmap based versions, v0.12.1 was last release
     # metallb_version: "v0.12.1"
 
@@ -43,12 +44,11 @@ Example Playbook
     # Install MetalLB L2 load balancer
     # ===========================================================================
     - name: Install MetalLB load balancer
-    hosts: k8s_master
-    become: true
-    tags: play_metallb
+      hosts: k8s_master
+      become: true
 
-    roles:
-        - ansible-role-kubernetes-metallb
+      roles:
+        - jedimt.kubernetes_metallb
 
 License
 -------
