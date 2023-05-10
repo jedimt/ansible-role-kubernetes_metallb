@@ -1,17 +1,6 @@
 ---
 # vars file for jedimt.kubernetes_metallb
 
-# MetalLB L2 load balancer for K8s (v0.13.9 | v0.12.1)
-metallb_version: "v0.13.9"
-
-# For previous configmap based versions, v0.12.1 was last release
-# metallb_version: "v0.12.1"
-
-# "Service" IP addresses to use for pods needing a load balancer
-# This represents a continuous range of IP addresses
-metallb_start: 10.100.24.48
-metallb_end: 10.100.24.52
-
 # URL to pull MetalLB manifests for v0.13x versions
 metallb_v13_url: "https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests"
 
